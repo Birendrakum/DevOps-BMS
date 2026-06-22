@@ -2,21 +2,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# --- VPC with Public + Private Subnets ---
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "5.0.0"
-
-  name = "eks-vpc"
-  cidr = "10.0.0.0/16"
-
-  azs             = ["us-east-1a", "us-east-1b"]
-  public_subnets  = ["10.0.1.0/24", "10.0.2.0/24"]
-  private_subnets = ["10.0.3.0/24", "10.0.4.0/24"]
-
-  enable_nat_gateway = true
-  single_nat_gateway = true
-}
 
 # --- IAM Role for EKS Cluster ---
 resource "aws_iam_role" "eks_cluster_role" {
@@ -76,7 +61,7 @@ resource "aws_eks_cluster" "my_cluster" {
   role_arn = aws_iam_role.eks_cluster_role.arn
 
   vpc_config {
-    subnet_ids = module.vpc.private_subnets
+    subnet_ids = [data.aws_subnet.eks_private_a, data.aws_subnet.eks_private_a]
   }
 
   depends_on = [aws_iam_role_policy_attachment.eks_cluster_policy]
@@ -87,7 +72,7 @@ resource "aws_eks_node_group" "private_nodes" {
   cluster_name    = aws_eks_cluster.my_cluster.name
   node_group_name = "private-nodes"
   node_role_arn   = aws_iam_role.eks_node_role.arn
-  subnet_ids      = module.vpc.private_subnets
+  subnet_ids      = data.aws_subnet.eks_private_a
 
   scaling_config {
     desired_size = 2

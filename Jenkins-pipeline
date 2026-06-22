@@ -130,6 +130,30 @@ pipeline {
                 }
             }
         }
+
+        stage('Install kube-prometheus-stack') {
+            steps {
+               sh '''
+               # Add the Prometheus Helm repository
+               helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+               # Update Helm repositories
+               helm repo update
+
+               # Create the monitoring namespace if it doesn't exist
+               kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+
+               # Install or upgrade kube-prometheus-stack
+               helm upgrade --install kube-prometheus-stack \
+                prometheus-community/kube-prometheus-stack \
+                --namespace monitoring \
+                --wait
+
+               # Verify the installation
+               kubectl get pods -n monitoring
+               '''
+             }
+        }
     }
 
     post {
