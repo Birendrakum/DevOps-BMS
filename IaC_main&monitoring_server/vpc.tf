@@ -10,25 +10,47 @@ resource "aws_vpc" "main_vpc" {
 }
 
 # Public Subnet
-resource "aws_subnet" "public_subnet" {
+resource "aws_subnet" "public_subnet_A" {
   vpc_id                  = aws_vpc.main_vpc.id
   cidr_block              = "10.0.1.0/24"
   availability_zone       = "us-east-1a"
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "MainServerPublicSubnet"
+    Name = "PublicSubnet_A"
+    "kubernetes.io/role/elb" = "1"
+  }
+}
+
+resource "aws_subnet" "public_subnet_B" {
+  vpc_id = aws_vpc.main_vpc.id
+  cidr_block = "10.0.2.0/24"
+  availability_zone = "us-east-1b"
+
+  tags = {
+     Name = "PublicSubnet_B"
+     "kubernetes.io/role/elb" = "1"
   }
 }
 
 # Private Subnet
-resource "aws_subnet" "private_subnet" {
+resource "aws_subnet" "private_subnet_A" {
   vpc_id            = aws_vpc.main_vpc.id
-  cidr_block        = "10.0.2.0/24"
+  cidr_block        = "10.0.3.0/24"
   availability_zone = "us-east-1a"
 
   tags = {
     Name = "MainServerPrivateSubnet"
+  }
+}
+
+resource "aws_subnet" "private_subnet_B" {
+  vpc_id            = aws_vpc.main_vpc.id
+  cidr_block        = "10.0.4.0/24"
+  availability_zone = "us-east-1b"
+
+  tags = {
+    Name = "PrivateSubnet_B"
   }
 }
 
@@ -43,12 +65,12 @@ resource "aws_internet_gateway" "igw" {
 
 # NAT Gateway (for private subnet outbound access)
 resource "aws_eip" "nat_eip" {
-  vpc = true
+  domain = "vpc"
 }
 
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat_eip.id
-  subnet_id     = aws_subnet.public_subnet.id
+  subnet_id     = aws_subnet.public_subnet_A.id
 
   tags = {
     Name = "MainServerNAT"
@@ -69,8 +91,13 @@ resource "aws_route_table" "public_rt" {
   }
 }
 
-resource "aws_route_table_association" "public_assoc" {
+resource "aws_route_table_association" "public_assoc_A" {
   subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+resource "aws_route_table_association" "public_assoc_B" {
+  subnet_id      = aws_subnet.public_subnet_B.id
   route_table_id = aws_route_table.public_rt.id
 }
 
@@ -88,7 +115,12 @@ resource "aws_route_table" "private_rt" {
   }
 }
 
-resource "aws_route_table_association" "private_assoc" {
-  subnet_id      = aws_subnet.private_subnet.id
+resource "aws_route_table_association" "private_assoc_A" {
+  subnet_id      = aws_subnet.private_subnet_A.id
+  route_table_id = aws_route_table.private_rt.id
+}
+
+resource "aws_route_table_association" "private_assoc_B" {
+  subnet_id      = aws_subnet.private_subnet_B.id
   route_table_id = aws_route_table.private_rt.id
 }
