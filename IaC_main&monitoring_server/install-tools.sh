@@ -50,20 +50,11 @@ docker run -d \
   -p 9000:9000 \
   sonarqube:latest
 
----
+# Install Helm
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod +x get_helm.sh
+./get_helm.sh
+rm -f get_helm.sh
 
-## 🔹 `provider.tf`
-```hcl
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-  required_version = ">= 1.5.0"
-}
-
-provider "aws" {
-  region = "us-east-1"
-}
+# Verify installation
+helm version
